@@ -44,6 +44,7 @@ import com.android.internal.telephony.Phone;
 import java.util.List;
 
 import android.provider.Contacts.Organizations;
+import com.android.phone.location.PhoneLocation;
 
 /**
  * "Call card" UI element: the in-call screen contains a tiled layout of call
@@ -115,6 +116,7 @@ public class CallCard extends FrameLayout
 // add by cytown
 private CallFeaturesSetting mSettings;
 private TextView mOrganization;
+private TextView mCity;
 
     public CallCard(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -192,6 +194,7 @@ mSettings = CallFeaturesSetting.getInstance(android.preference.PreferenceManager
         mLabel = (TextView) findViewById(R.id.label);
         mSocialStatus = (TextView) findViewById(R.id.socialStatus);
 mOrganization = (TextView) findViewById(R.id.organization);
+mCity = (TextView) findViewById(R.id.city);
 
         // "Other call" info area
         mSecondaryCallName = (TextView) findViewById(R.id.secondaryCallName);
@@ -534,6 +537,7 @@ mOrganization = (TextView) findViewById(R.id.organization);
             mPhoneNumber.setTextColor(getResources().getColor(mRotarySelectorHintColorResId));
             mPhoneNumber.setVisibility(View.VISIBLE);
             mLabel.setVisibility(View.GONE);
+mCity.setVisibility(View.GONE);
         }
         // If we don't have a hint to display, just don't touch
         // mPhoneNumber and mLabel. (Their text / color / visibility have
@@ -1002,6 +1006,7 @@ mOrganization = (TextView) findViewById(R.id.organization);
         Drawable socialStatusBadge = null;
 
 boolean updateName = false;
+String city = null;
 
         if (info != null) {
             // It appears that there is a small change in behaviour with the
@@ -1047,6 +1052,9 @@ updateName = true;
                 }
             }
             personUri = ContentUris.withAppendedId(Contacts.CONTENT_URI, info.person_id);
+if(!TextUtils.isEmpty(info.phoneNumber)){
+    city = PhoneLocation.getCityFromPhone(info.phoneNumber);
+}
         } else {
             name =  getPresentationString(presentation);
         }
@@ -1064,6 +1072,13 @@ if (updateName && mSettings.mShowOrgan) {
 }
         }
         mName.setVisibility(View.VISIBLE);
+
+if(city != null){
+    mCity.setText(city);
+    mCity.setVisibility(View.VISIBLE);
+}else{
+    mCity.setVisibility(View.GONE);
+}
 
         // Update mPhoto
         // if the temporary flag is set, we know we'll be getting another call after
@@ -1199,6 +1214,9 @@ private void updateOrganization(final long person_id) {
 
         // socialStatus is never visible in this state.
         mSocialStatus.setVisibility(View.GONE);
+
+// add for Chinese city funciton
+mCity.setVisibility(View.GONE);
 
         // TODO: for a GSM conference call, since we do actually know who
         // you're talking to, consider also showing names / numbers /
