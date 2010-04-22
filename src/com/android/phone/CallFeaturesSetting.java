@@ -386,6 +386,8 @@ public class CallFeaturesSetting extends PreferenceActivity
      */
     private boolean mReadingSettingsForDefaultProvider = false;
 
+    private boolean mForeground;
+
 // add by cytown for vibrate
 private static CallFeaturesSetting mInstance = null;
 private static final String BUTTON_VIBRATE_OUTGOING = "button_vibrate_outgoing";
@@ -427,6 +429,12 @@ private EditPhoneNumberPreference mButtonAddBlack;
 private PreferenceCategory mCatBlackList;
 private static HashSet<PhoneNo> setBlackList = new HashSet<PhoneNo>();
 private static final int ADD_BLACK_LIST_ID = 3;
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mForeground = false;
+    }
 
     /*
      * Click Listeners, handle click based on objects attached to UI.
@@ -754,6 +762,22 @@ case ADD_BLACK_LIST_ID:
                         FWD_SETTINGS_DONT_TOUCH));
     }
 
+    private void showDialogIfForeground(int id) {
+        if (mForeground) {
+            showDialog(id);
+        }
+    }
+
+    private void dismissDialogSafely(int id) {
+        try {
+            dismissDialog(id);
+        } catch (IllegalArgumentException e) {
+            // This is expected in the case where we were in the background
+            // at the time we would normally have shown the dialog, so we didn't
+            // show it.
+        }
+    }
+
     private void saveVoiceMailAndForwardingNumber(String key,
             VoiceMailProviderSettings newSettings) {
         if (DBG) log("saveVoiceMailAndForwardingNumber: " + newSettings.toString());
@@ -794,7 +818,7 @@ case ADD_BLACK_LIST_ID:
                 mPhone.getCallForwardingOption(FORWARDING_SETTINGS_REASONS[i],
                         mGetOptionComplete.obtainMessage(EVENT_FORWARDING_GET_COMPLETED, i, 0));
             }
-            showDialog(VOICEMAIL_FWD_READING_DIALOG);
+            showDialogIfForeground(VOICEMAIL_FWD_READING_DIALOG);
         } else {
             saveVoiceMailAndForwardingNumberStage2();
         }
@@ -836,7 +860,7 @@ case ADD_BLACK_LIST_ID:
         if (error != null) {
             if (DBG) Log.d(LOG_TAG, "Error discovered for fwd read : " + idx);
             mForwardingReadResults = null;
-            dismissDialog(VOICEMAIL_FWD_READING_DIALOG);
+            dismissDialogSafely(VOICEMAIL_FWD_READING_DIALOG);
             showVMDialog(MSG_FW_GET_EXCEPTION);
             return;
         }
@@ -874,7 +898,7 @@ case ADD_BLACK_LIST_ID:
         }
         if (done) {
             if (DBG) Log.d(LOG_TAG, "Done receiving fwd info");
-            dismissDialog(VOICEMAIL_FWD_READING_DIALOG);
+            dismissDialogSafely(VOICEMAIL_FWD_READING_DIALOG);
             if (mReadingSettingsForDefaultProvider) {
                 maybeSaveSettingsForVoicemailProvider(DEFAULT_VM_PROVIDER_KEY,
                         new VoiceMailProviderSettings(this.mOldVmNumber,
@@ -946,7 +970,7 @@ case ADD_BLACK_LIST_ID:
                                     EVENT_FORWARDING_CHANGED, fi.reason, 0));
                 }
              }
-             showDialog(VOICEMAIL_FWD_SAVING_DIALOG);
+             showDialogIfForeground(VOICEMAIL_FWD_SAVING_DIALOG);
         } else {
             if (DBG) log("Not touching fwd #");
             setVMNumberWithCarrier();
@@ -1014,7 +1038,7 @@ case ADD_BLACK_LIST_ID:
             if (done) {
                 if (DBG) log("All VM provider related changes done");
                 if (mForwardingChangeResults != null) {
-                    dismissDialog(VOICEMAIL_FWD_SAVING_DIALOG);
+                    dismissDialogSafely(VOICEMAIL_FWD_SAVING_DIALOG);
                 }
                 handleSetVMOrFwdMessage();
             }
@@ -1185,17 +1209,22 @@ case ADD_BLACK_LIST_ID:
 
     /*
      * Helper Methods for Activity class.
-     * The inital query commands are split into two pieces now
+     * The initial query commands are split into two pieces now
      * for individual expansion.  This combined with the ability
      * to cancel queries allows for a much better user experience,
      * and also ensures that the user only waits to update the
      * data that is relevant.
      */
 
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog) {
+        super.onPrepareDialog(id, dialog);
+        mCurrentDialogId = id;
+    }
+
     // dialog creation method, called by showDialog()
     @Override
     protected Dialog onCreateDialog(int id) {
-        mCurrentDialogId = id;
         if ((id == VM_RESPONSE_ERROR) || (id == VM_NOCHANGE_ERROR) ||
             (id == FW_SET_RESPONSE_ERROR) || (id == FW_GET_RESPONSE_ERROR) ||
                 (id == VOICEMAIL_DIALOG_CONFIRM)) {
@@ -1311,20 +1340,22 @@ case ADD_BLACK_LIST_ID:
     // set the app state with optional status.
     private void showVMDialog(int msgStatus) {
         switch (msgStatus) {
+            // It's a bit worrisome to punt in the error cases here when we're
+            // not in the foreground; maybe toast instead?
             case MSG_VM_EXCEPTION:
-                showDialog(VM_RESPONSE_ERROR);
+                showDialogIfForeground(VM_RESPONSE_ERROR);
                 break;
             case MSG_FW_SET_EXCEPTION:
-                showDialog(FW_SET_RESPONSE_ERROR);
+                showDialogIfForeground(FW_SET_RESPONSE_ERROR);
                 break;
             case MSG_FW_GET_EXCEPTION:
-                showDialog(FW_GET_RESPONSE_ERROR);
+                showDialogIfForeground(FW_GET_RESPONSE_ERROR);
                 break;
             case MSG_VM_NOCHANGE:
-                showDialog(VM_NOCHANGE_ERROR);
+                showDialogIfForeground(VM_NOCHANGE_ERROR);
                 break;
             case MSG_VM_OK:
-                showDialog(VOICEMAIL_DIALOG_CONFIRM);
+                showDialogIfForeground(VOICEMAIL_DIALOG_CONFIRM);
                 break;
             case MSG_OK:
             default:
@@ -1473,6 +1504,7 @@ initPrefBlackList();
     @Override
     protected void onResume() {
         super.onResume();
+        mForeground = true;
 
         if (mButtonDTMF != null) {
             int dtmf = Settings.System.getInt(getContentResolver(),
