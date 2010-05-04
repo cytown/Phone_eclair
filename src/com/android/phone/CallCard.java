@@ -43,7 +43,7 @@ import com.android.internal.telephony.Phone;
 
 import java.util.List;
 
-import android.provider.Contacts.Organizations;
+import android.provider.ContactsContract;
 
 /**
  * "Call card" UI element: the in-call screen contains a tiled layout of call
@@ -1138,9 +1138,10 @@ if (updateName && mSettings.mShowOrgan) {
 private void updateOrganization(final long person_id) {
 //    new android.os.Handler().post(new Runnable() {
 //        public void run() {
-            android.database.Cursor c = CallCard.this.getContext().getContentResolver().query(Organizations.CONTENT_URI,
-                    new String[] { Organizations.COMPANY },
-                    Organizations.PERSON_ID + " = ?", new String[] { person_id + "" },
+            android.database.Cursor c = CallCard.this.getContext().getContentResolver().query(ContactsContract.Data.CONTENT_URI,
+                    new String[] { ContactsContract.CommonDataKinds.Organization.COMPANY },
+                    ContactsContract.Data.CONTACT_ID + " = ? and " + ContactsContract.Data.MIMETYPE + " = '" +
+                    ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE + "'", new String[] { person_id + "" },
                     null);
             if (c != null) {
                 if (c.moveToNext()) {
