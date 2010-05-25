@@ -945,6 +945,9 @@ if (c != null) {
             } else if (cause == Connection.DisconnectCause.OUT_OF_SERVICE) {
                 if (DBG) log("- need to play OUT OF SERVICE tone!");
                 toneToPlay = InCallTonePlayer.TONE_OUT_OF_SERVICE;
+            } else if (cause == Connection.DisconnectCause.UNOBTAINABLE_NUMBER) {
+                if (DBG) log("- need to play TONE_UNOBTAINABLE_NUMBER tone!");
+                toneToPlay = InCallTonePlayer.TONE_UNOBTAINABLE_NUMBER;
             } else if (cause == Connection.DisconnectCause.ERROR_UNSPECIFIED) {
                 if (DBG) log("- DisconnectCause is ERROR_UNSPECIFIED: play TONE_CALL_ENDED!");
                 toneToPlay = InCallTonePlayer.TONE_CALL_ENDED;
@@ -1279,6 +1282,7 @@ if (c != null) {
         public static final int TONE_OUT_OF_SERVICE = 10;
         public static final int TONE_REDIAL = 11;
         public static final int TONE_OTA_CALL_END = 12;
+        public static final int TONE_UNOBTAINABLE_NUMBER = 13;
 
         // The tone volume relative to other sounds in the stream
         private static final int TONE_RELATIVE_VOLUME_HIPRI = 80;
@@ -1380,6 +1384,11 @@ if (c != null) {
                     toneType = ToneGenerator.TONE_CDMA_ALERT_AUTOREDIAL_LITE;
                     toneVolume = TONE_RELATIVE_VOLUME_LOPRI;
                     toneLengthMillis = 5000;
+                    break;
+                case TONE_UNOBTAINABLE_NUMBER:
+                    toneType = ToneGenerator.TONE_SUP_ERROR;
+                    toneVolume = TONE_RELATIVE_VOLUME_HIPRI;
+                    toneLengthMillis = 4000;
                     break;
                 default:
                     throw new IllegalArgumentException("Bad toneId: " + mToneId);
