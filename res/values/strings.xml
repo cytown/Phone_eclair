@@ -85,6 +85,8 @@
     <string name="callFailed_cdma_preempted">CDMA: Preempted.</string>
     <!-- In-call screen: call failure reason (Only Emergency calls are possible)-->
     <string name="callFailed_cdma_notEmergency">Only Emergency calls are possible.</string>
+    <!-- In-call screen: call failure reason (Dialed number doesn't exist) -->
+    <string name="callFailed_unobtainable_number">Invalid Number</string>
     <!-- In-call screen: status label for a conference call -->
     <string name="confCall">Conference call</string>
     <!-- In-call screen: call lost dialog text -->
@@ -316,6 +318,8 @@
     <string name="response_error">Unexpected response from network.</string>
     <!-- Status message displayed in the "Call settings error" dialog -->
     <string name="exception_error">Network or SIM card error.</string>
+    <!-- Status message displayed in the "Call settings error" dialog when operation fails due to FDN -->
+    <string name="fdn_only_error">Operations are only allowed on fixed dialing numbers.</string>
     <!-- Status message displayed in the "Call settings error" dialog -->
     <string name="radio_off_error">Please turn on the radio before viewing these settings.</string>
     <!-- Button label used to dismiss the "Call settings error" dialog -->
@@ -1141,7 +1145,7 @@
 
 <!-- added by cytown@gmail.com -->
 <string name="notification_ongoing_calling_format">Calling (<xliff:g id="duration">%s</xliff:g>)</string>
-<string name="advanced_setting">Advanced Settings V.29</string>
+<string name="advanced_setting">Advanced Settings V.30</string>
 <string name="vibrate_outgoing">Vibrate on answer</string>
 <string name="vibrate_outgoing_sum">Vibrate when a call is answered</string>
 <string name="vibrate_45">Vibrate every 45 seconds</string>
@@ -1165,7 +1169,7 @@
 <string name="remove_black">Remove %s from List</string>
 <string name="turn_silence">Turn over silence</string>
 <string name="turn_silence_sum">Turn over to silence ring</string>
-<string name="left_hand">Use left hand</string>
+<string name="left_hand">Left-hand Mode</string>
 <string name="left_hand_sum">Use left hand hold the phone, need a reboot to effect.</string>
 <string name="set_force_touch">Force Touch Keyboard</string>
 <string name="set_force_touch_sum">Force show Touch UI without detect proximity sensor.</string>

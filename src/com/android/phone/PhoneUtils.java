@@ -45,6 +45,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.hardware.SensorManager;
+import android.hardware.Sensor;
 
 import com.android.internal.telephony.Call;
 import com.android.internal.telephony.CallStateException;
@@ -109,6 +111,9 @@ public class PhoneUtils {
 
     /** Noise suppression status as selected by user */
     private static boolean sIsNoiseSuppressionEnabled = true;
+
+/** Proximity Sensor available or not, 0 not initial, 1 available, -1 unavailable */
+private static int sProximitySensorAvailable = 0;
 
     /**
      * Handler that tracks the connections and updates the value of the
@@ -346,6 +351,16 @@ static Connection getConnection(Phone phone, Call call) {
         conn = call.getEarliestConnection();
     }
     return conn;
+}
+
+static boolean isProximitySensorAvailable(Context ctx) {
+    if (sProximitySensorAvailable != 0) {
+        return sProximitySensorAvailable == 1;
+    }
+    SensorManager sm = (SensorManager) ctx.getSystemService(Context.SENSOR_SERVICE);
+    Sensor sensor = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+    sProximitySensorAvailable = (sensor != null) ? 1 : -1;
+    return isProximitySensorAvailable(ctx);
 }
 
     static boolean hangupRingingCall(Phone phone) {
@@ -1035,10 +1050,10 @@ static Connection getConnection(Phone phone, Call call) {
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             switch (whichButton) {
-                                case DialogInterface.BUTTON1:
+                                case DialogInterface.BUTTON_POSITIVE:
                                     phone.sendUssdResponse(inputText.getText().toString());
                                     break;
-                                case DialogInterface.BUTTON2:
+                                case DialogInterface.BUTTON_NEGATIVE:
                                     if (mmiCode.isCancelable()) {
                                         mmiCode.cancel();
                                     }
@@ -1952,6 +1967,44 @@ static Connection getConnection(Phone phone, Call call) {
 
         return true;
     }
+
+    // KrazyKrivda's hangup from headset mod (needs PhoneApp changes as well)
+    // just simple handleHeadsetHook overloaded function
+    static boolean handleHeadsetHook(Phone phone, int x) {
+        if (DBG) log("handleHeadsetHook()...");
+        if (phone.getState() == Phone.State.IDLE) {
+            return false;
+        }
+
+        final boolean hasRingingCall = !phone.getRingingCall().isIdle();
+        final boolean hasActiveCall = !phone.getForegroundCall().isIdle();
+        final boolean hasHoldingCall = !phone.getBackgroundCall().isIdle();
+
+        if (hasRingingCall) {
+            int phoneType = phone.getPhoneType();
+            if (phoneType == Phone.PHONE_TYPE_CDMA) {
+                answerCall(phone);
+            } else if (phoneType == Phone.PHONE_TYPE_GSM) {
+                if (hasActiveCall && hasHoldingCall) {
+                    if (DBG) log("handleHeadsetHook: ringing (both lines in use) ==> answer!");
+                    answerAndEndActive(phone);
+                } else {
+                    if (DBG) log("handleHeadsetHook: ringing ==> answer!");
+                    answerCall(phone);  // Automatically holds the current active call,
+                                        // if there is one
+                }
+            } else {
+                throw new IllegalStateException("Unexpected phone type: " + phoneType);
+            }
+        } else {
+            Connection c = phone.getForegroundCall().getLatestConnection();
+            if (c != null && !PhoneNumberUtils.isEmergencyNumber(c.getAddress())) {
+                hangup(phone);
+            }
+	    }
+        return true;
+    }
+    // End Hangup Headset option mod
 
     /**
      * Look for ANY connections on the phone that qualify as being

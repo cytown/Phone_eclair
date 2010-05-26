@@ -989,6 +989,10 @@ mCity.setVisibility(View.GONE);
                     resID = R.string.callFailed_outOfService;
                     break;
 
+                case UNOBTAINABLE_NUMBER:
+                    resID = R.string.callFailed_unobtainable_number;
+                    break;
+
                 default:
                     resID = R.string.card_title_call_ended;
                     break;
