@@ -22,6 +22,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.pim.ContactsAsyncHelper;
 import android.provider.ContactsContract.Contacts;
+import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
@@ -42,6 +43,7 @@ import com.android.internal.telephony.Connection;
 import com.android.internal.telephony.Phone;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import android.provider.ContactsContract;
 import com.android.phone.location.PhoneLocation;
@@ -113,10 +115,10 @@ public class CallCard extends FrameLayout
     // Cached DisplayMetrics density.
     private float mDensity;
 
-// add by cytown
-private CallFeaturesSetting mSettings;
-private TextView mOrganization;
-private TextView mCity;
+    // add by cytown
+    private CallFeaturesSetting mSettings;
+    private TextView mOrganization;
+    private TextView mCity;
 
     public CallCard(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -134,8 +136,8 @@ private TextView mCity;
 
         mApplication = PhoneApp.getInstance();
 
-// add by cytown
-mSettings = CallFeaturesSetting.getInstance(android.preference.PreferenceManager.getDefaultSharedPreferences(context));
+        // add by cytown
+        mSettings = CallFeaturesSetting.getInstance(android.preference.PreferenceManager.getDefaultSharedPreferences(context));
 
         mCallTime = new CallTime(this);
 
@@ -176,12 +178,12 @@ mSettings = CallFeaturesSetting.getInstance(android.preference.PreferenceManager
 
         // Text colors
         mTextColorDefaultPrimary =  // corresponds to textAppearanceLarge
-                getResources().getColor(android.R.color.primary_text_dark);
+            getResources().getColor(android.R.color.primary_text_dark);
         mTextColorDefaultSecondary =  // corresponds to textAppearanceSmall
-                getResources().getColor(android.R.color.secondary_text_dark);
+            getResources().getColor(android.R.color.secondary_text_dark);
         mTextColorConnected = getResources().getColor(R.color.incall_textConnected);
         mTextColorConnectedBluetooth =
-                getResources().getColor(R.color.incall_textConnectedBluetooth);
+            getResources().getColor(R.color.incall_textConnectedBluetooth);
         mTextColorEnded = getResources().getColor(R.color.incall_textEnded);
         mTextColorOnHold = getResources().getColor(R.color.incall_textOnHold);
 
@@ -193,8 +195,8 @@ mSettings = CallFeaturesSetting.getInstance(android.preference.PreferenceManager
         mPhoneNumber = (TextView) findViewById(R.id.phoneNumber);
         mLabel = (TextView) findViewById(R.id.label);
         mSocialStatus = (TextView) findViewById(R.id.socialStatus);
-mOrganization = (TextView) findViewById(R.id.organization);
-mCity = (TextView) findViewById(R.id.city);
+        mOrganization = (TextView) findViewById(R.id.organization);
+        mCity = (TextView) findViewById(R.id.city);
 
         // "Other call" info area
         mSecondaryCallName = (TextView) findViewById(R.id.secondaryCallName);
@@ -237,7 +239,7 @@ mCity = (TextView) findViewById(R.id.city);
             Call fgCall = phone.getForegroundCall();
             Call bgCall = phone.getBackgroundCall();
             if ((fgCall.getState() == Call.State.DISCONNECTED)
-                || (bgCall.getState() == Call.State.DISCONNECTED)) {
+                    || (bgCall.getState() == Call.State.DISCONNECTED)) {
                 // In this case, we want the main CallCard to display
                 // the "Call ended" state.  The normal "foreground call"
                 // code path handles that.
@@ -346,7 +348,7 @@ mCity = (TextView) findViewById(R.id.city);
      */
     private void displayMainCallStatus(Phone phone, Call call) {
         if (DBG) log("displayMainCallStatus(phone " + phone
-                     + ", call " + call + ")...");
+                + ", call " + call + ")...");
 
         if (call == null) {
             // There's no call to display, presumably because the phone is idle.
@@ -486,7 +488,7 @@ mCity = (TextView) findViewById(R.id.city);
                 if (runQuery) {
                     if (DBG) log("- displayMainCallStatus: starting CallerInfo query...");
                     PhoneUtils.CallerInfoToken info =
-                            PhoneUtils.startGetCallerInfo(getContext(), conn, this, call);
+                        PhoneUtils.startGetCallerInfo(getContext(), conn, this, call);
                     updateDisplayForPerson(info.currentInfo, presentation, !info.isFinal, call);
                 } else {
                     // No need to fire off a new query.  We do still need
@@ -513,7 +515,7 @@ mCity = (TextView) findViewById(R.id.city);
                         updateDisplayForPerson(ci, presentation, true, call);
                     } else {
                         Log.w(LOG_TAG, "displayMainCallStatus: runQuery was false, "
-                              + "but we didn't have a cached CallerInfo object!  o = " + o);
+                                + "but we didn't have a cached CallerInfo object!  o = " + o);
                         // TODO: any easy way to recover here (given that
                         // the CallCard is probably displaying stale info
                         // right now?)  Maybe force the CallCard into the
@@ -560,7 +562,7 @@ mCity.setVisibility(View.GONE);
             Call call = (Call) cookie;
             Connection conn = call.getEarliestConnection();
             PhoneUtils.CallerInfoToken cit =
-                   PhoneUtils.startGetCallerInfo(getContext(), conn, this, null);
+                PhoneUtils.startGetCallerInfo(getContext(), conn, this, null);
 
             int presentation = Connection.PRESENTATION_ALLOWED;
             if (conn != null) presentation = conn.getNumberPresentation();
@@ -634,7 +636,7 @@ mCity.setVisibility(View.GONE);
                 int ongoingCallIcon = bluetoothActive ? R.drawable.ic_incall_ongoing_bluetooth
                         : R.drawable.ic_incall_ongoing;
                 int connectedTextColor = bluetoothActive
-                        ? mTextColorConnectedBluetooth : mTextColorConnected;
+                ? mTextColorConnectedBluetooth : mTextColorConnected;
 
                 if (phoneType == Phone.PHONE_TYPE_CDMA) {
                     // Check if the "Dialing" 3Way call needs to be displayed
@@ -834,7 +836,7 @@ mCity.setVisibility(View.GONE);
                             getContext(), call, this, mSecondaryCallName);
                     mSecondaryCallName.setText(
                             PhoneUtils.getCompactNameFromCallerInfo(infoToken.currentInfo,
-                                                                    getContext()));
+                                    getContext()));
 
                     // Also pull the photo out of the current CallerInfo.
                     // (Note we assume we already have a valid photo at
@@ -882,7 +884,7 @@ mCity.setVisibility(View.GONE);
                         String name = PhoneUtils.getCompactNameFromCallerInfo(info, getContext());
                         boolean forceGenericPhoto = false;
                         if (info != null && info.numberPresentation !=
-                                Connection.PRESENTATION_ALLOWED) {
+                            Connection.PRESENTATION_ALLOWED) {
                             name = getPresentationString(info.numberPresentation);
                             forceGenericPhoto = true;
                         }
@@ -1009,11 +1011,11 @@ mCity.setVisibility(View.GONE);
      * updateDisplayForConference() instead.
      */
     private void updateDisplayForPerson(CallerInfo info,
-                                        int presentation,
-                                        boolean isTemporary,
-                                        Call call) {
+            int presentation,
+            boolean isTemporary,
+            Call call) {
         if (DBG) log("updateDisplayForPerson(" + info + ")\npresentation:" +
-                     presentation + " isTemporary:" + isTemporary);
+                presentation + " isTemporary:" + isTemporary);
 
         // inform the state machine that we are displaying a photo.
         mPhotoTracker.setPhotoRequest(info);
@@ -1026,8 +1028,8 @@ mCity.setVisibility(View.GONE);
         String socialStatusText = null;
         Drawable socialStatusBadge = null;
 
-boolean updateName = false;
-String city = null;
+        boolean updateName = false;
+        String city = null;
 
         if (info != null) {
             // It appears that there is a small change in behaviour with the
@@ -1068,38 +1070,38 @@ String city = null;
                     name = info.name;
                     displayNumber = info.phoneNumber;
                     label = info.phoneLabel;
-// add by cytown for show organization
-updateName = true;
+                    // add by cytown for show organization
+                    updateName = true;
                 }
             }
             personUri = ContentUris.withAppendedId(Contacts.CONTENT_URI, info.person_id);
-if(!TextUtils.isEmpty(info.phoneNumber)){
-    city = PhoneLocation.getCityFromPhone(info.phoneNumber);
-}
+            if(!TextUtils.isEmpty(info.phoneNumber)){
+                city = PhoneLocation.getCityFromPhone(info.phoneNumber);
+            }
         } else {
             name =  getPresentationString(presentation);
         }
 
         if (call.isGeneric()) {
             mName.setText(R.string.card_title_in_call);
-mOrganization.setVisibility(View.GONE);
+            mOrganization.setVisibility(View.GONE);
         } else {
             mName.setText(name);
-log("show ======= " + updateName + ":" + mSettings.mShowOrgan);
-if (updateName && mSettings.mShowOrgan) {
-    updateOrganization(info.person_id);
-} else {
-    mOrganization.setVisibility(View.GONE);
-}
+            log("show ======= " + updateName + ":" + mSettings.mShowOrgan);
+            if (updateName && mSettings.mShowOrgan) {
+                updateOrganization(info.person_id);
+            } else {
+                mOrganization.setVisibility(View.GONE);
+            }
         }
         mName.setVisibility(View.VISIBLE);
 
-if(city != null){
-    mCity.setText(city);
-    mCity.setVisibility(View.VISIBLE);
-}else{
-    mCity.setVisibility(View.GONE);
-}
+        if(city != null){
+            mCity.setText(city);
+            mCity.setVisibility(View.VISIBLE);
+        }else{
+            mCity.setVisibility(View.GONE);
+        }
 
         // Update mPhoto
         // if the temporary flag is set, we know we'll be getting another call after
@@ -1119,7 +1121,7 @@ if(city != null){
             // Load the image with a callback to update the image state.
             // Use the default unknown picture while the query is running.
             ContactsAsyncHelper.updateImageViewWithContactPhotoAsync(
-                info, 0, this, call, getContext(), mPhoto, personUri, R.drawable.picture_unknown);
+                    info, 0, this, call, getContext(), mPhoto, personUri, R.drawable.picture_unknown);
         }
         // And no matter what, on all devices, we never see the "manage
         // conference" button in this state.
@@ -1154,30 +1156,26 @@ if(city != null){
         }
     }
 
-private void updateOrganization(final long person_id) {
-//    new android.os.Handler().post(new Runnable() {
-//        public void run() {
-            android.database.Cursor c = CallCard.this.getContext().getContentResolver().query(ContactsContract.Data.CONTENT_URI,
-                    new String[] { ContactsContract.CommonDataKinds.Organization.COMPANY },
-                    ContactsContract.Data.CONTACT_ID + " = ? and " + ContactsContract.Data.MIMETYPE + " = '" +
-                    ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE + "'", new String[] { person_id + "" },
-                    null);
-            if (c != null) {
-                if (c.moveToNext()) {
-                    try {
-                        if (DBG) Log.d(LOG_TAG, "show organ");
-                        mOrganization.setText(c.getString(0));
-                        mOrganization.setVisibility(View.VISIBLE);
-                        mOrganization.invalidate();
-                    } catch (Exception e) {}
-                } else {
-                    mOrganization.setVisibility(View.GONE);
-                }
-                c.close();
+    private void updateOrganization(final long person_id) {
+        android.database.Cursor c = CallCard.this.getContext().getContentResolver().query(ContactsContract.Data.CONTENT_URI,
+                new String[] { ContactsContract.CommonDataKinds.Organization.COMPANY },
+                ContactsContract.Data.CONTACT_ID + " = ? and " + ContactsContract.Data.MIMETYPE + " = '" +
+                ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE + "'", new String[] { person_id + "" },
+                null);
+        if (c != null) {
+            if (c.moveToNext()) {
+                try {
+                    // we have found an organization.  set the organization name and exit loop
+                    mOrganization.setText(c.getString(0));
+                    mOrganization.setVisibility(View.VISIBLE);
+                    mOrganization.invalidate();
+                } catch (Exception e) {}
+            } else {
+                mOrganization.setVisibility(View.GONE);
             }
-//        }
-//    });
-}
+            c.close();
+        }
+    }
 
     private String getPresentationString(int presentation) {
         String name = getContext().getString(R.string.unknown);
@@ -1214,7 +1212,7 @@ private void updateOrganization(final long person_id) {
                 // Display the "manage conference" button in place of the photo.
                 mManageConferencePhotoButton.setVisibility(View.VISIBLE);
                 mPhoto.setVisibility(View.INVISIBLE);  // Not GONE, since that would break
-                                                       // other views in our RelativeLayout.
+                // other views in our RelativeLayout.
             } else {
                 // Display the "conference call" image in the photo slot,
                 // with no other information.
@@ -1279,7 +1277,7 @@ mCity.setVisibility(View.GONE);
                 if (c != null) {
                     Connection.DisconnectCause cause = c.getDisconnectCause();
                     if ((cause == Connection.DisconnectCause.BUSY)
-                        || (cause == Connection.DisconnectCause.CONGESTION)) {
+                            || (cause == Connection.DisconnectCause.CONGESTION)) {
                         photoImageResource = R.drawable.picture_busy;
                     }
                 } else if (DBG) {
@@ -1292,7 +1290,7 @@ mCity.setVisibility(View.GONE);
             case DIALING:
             case ALERTING:
                 photoImageResource = R.drawable.picture_dialing;
-//                break;
+                //                break;
 
             default:
                 // Leave the photo alone in all other states.
@@ -1351,7 +1349,7 @@ mCity.setVisibility(View.GONE);
                 if (photoImageResource == 0) {
                     if (!PhoneUtils.isConferenceCall(call)) {
                         if (!showCachedImage(mPhoto, ci) && (mPhotoTracker.getPhotoState() ==
-                                ContactsAsyncHelper.ImageTracker.DISPLAY_DEFAULT)) {
+                            ContactsAsyncHelper.ImageTracker.DISPLAY_DEFAULT)) {
                             ContactsAsyncHelper.updateImageViewWithContactPhotoAsync(ci,
                                     getContext(), mPhoto, mPhotoTracker.getPhotoUri(), -1);
                             mPhotoTracker.setPhotoState(
@@ -1421,7 +1419,7 @@ mCity.setVisibility(View.GONE);
      */
     private void setSideMargins(ViewGroup vg, int margin) {
         ViewGroup.MarginLayoutParams lp =
-                (ViewGroup.MarginLayoutParams) vg.getLayoutParams();
+            (ViewGroup.MarginLayoutParams) vg.getLayoutParams();
         // Equivalent to setting android:layout_marginLeft/Right in XML
         lp.leftMargin = margin;
         lp.rightMargin = margin;
