@@ -363,16 +363,6 @@ public class PhoneUtils {
         return isProximitySensorAvailable(ctx);
     }
 
-static boolean isProximitySensorAvailable(Context ctx) {
-    if (sProximitySensorAvailable != 0) {
-        return sProximitySensorAvailable == 1;
-    }
-    SensorManager sm = (SensorManager) ctx.getSystemService(Context.SENSOR_SERVICE);
-    Sensor sensor = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
-    sProximitySensorAvailable = (sensor != null) ? 1 : -1;
-    return isProximitySensorAvailable(ctx);
-}
-
     static boolean hangupRingingCall(Phone phone) {
         if (DBG) log("hangup ringing call");
         Call ringing = phone.getRingingCall();

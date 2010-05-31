@@ -1162,29 +1162,6 @@ public class CallCard extends FrameLayout
         }
     }
 
-    private List<Long> lookupRawContactIdsForContactId(final long contactId) {
-        List<Long> rawContactIds = new ArrayList<Long>();
-        android.database.Cursor c = null;
-        try {
-            // look for all raw contact ids for a normal contact id
-            c = CallCard.this.getContext().getContentResolver().query(RawContacts.CONTENT_URI,
-                    new String[]{RawContacts._ID},
-                    RawContacts.CONTACT_ID + " = ?",
-                    new String[]{String.valueOf(contactId)}, null);
-            if (c != null) {
-                while(c.moveToNext()) {
-                    // add all raw contact ids to a list
-                    rawContactIds.add(c.getLong(0));
-                }
-            }
-        } finally {
-            if(c != null) {
-                c.close();
-            }
-        }
-        return rawContactIds;
-    }
-
     private String getPresentationString(int presentation) {
         String name = getContext().getString(R.string.unknown);
         if (presentation == Connection.PRESENTATION_RESTRICTED) {
