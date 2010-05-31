@@ -386,8 +386,6 @@ public class CallFeaturesSetting extends PreferenceActivity
      */
     private boolean mReadingSettingsForDefaultProvider = false;
 
-    private boolean mForeground;
-
 // add by cytown for vibrate
 private static CallFeaturesSetting mInstance = null;
 private static final String BUTTON_VIBRATE_OUTGOING = "button_vibrate_outgoing";
@@ -432,6 +430,8 @@ private EditPhoneNumberPreference mButtonAddBlack;
 private PreferenceCategory mCatBlackList;
 private static HashSet<PhoneNo> setBlackList = new HashSet<PhoneNo>();
 private static final int ADD_BLACK_LIST_ID = 3;
+
+    private boolean mForeground;
 
     @Override
     public void onPause() {
