@@ -45,6 +45,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.hardware.SensorManager;
+import android.hardware.Sensor;
 
 import com.android.internal.telephony.Call;
 import com.android.internal.telephony.CallStateException;
@@ -110,6 +112,9 @@ public class PhoneUtils {
     /** Noise suppression status as selected by user */
     private static boolean sIsNoiseSuppressionEnabled = true;
 
+    /** Proximity Sensor available or not, 0 not initial, 1 available, -1 unavailable */
+    private static int sProximitySensorAvailable = 0;
+
     /**
      * Handler that tracks the connections and updates the value of the
      * Mute settings for each connection as needed.
@@ -145,7 +150,7 @@ public class PhoneUtils {
                     // concurrent modification exceptions.
                     Connection cn;
                     for (Iterator<Connection> cnlist = sConnectionMuteTable.keySet().iterator();
-                            cnlist.hasNext();) {
+                    cnlist.hasNext();) {
                         cn = cnlist.next();
                         if (!fgConnections.contains(cn) && !bgConnections.contains(cn)) {
                             if (DBG) log("connection: " + cn + "not accounted for, removing.");
@@ -330,23 +335,33 @@ public class PhoneUtils {
         return hungup;
     }
 
-static Call getCurrentCall(Phone phone) {
-    Call ringing = phone.getRingingCall();
-    Call fg = phone.getForegroundCall();
-    Call bg = phone.getBackgroundCall();
-    return (!ringing.isIdle()) ? ringing : ((!fg.isIdle()) ? fg : ((!bg.isIdle()) ? bg : fg));
-}
-
-static Connection getConnection(Phone phone, Call call) {
-    if (call == null) return null;
-    Connection conn = null;
-    if (phone.getPhoneName().equals("CDMA")) {
-        conn = call.getLatestConnection();
-    } else {
-        conn = call.getEarliestConnection();
+    static Call getCurrentCall(Phone phone) {
+        Call ringing = phone.getRingingCall();
+        Call fg = phone.getForegroundCall();
+        Call bg = phone.getBackgroundCall();
+        return (!ringing.isIdle()) ? ringing : ((!fg.isIdle()) ? fg : ((!bg.isIdle()) ? bg : fg));
     }
-    return conn;
-}
+
+    static Connection getConnection(Phone phone, Call call) {
+        if (call == null) return null;
+        Connection conn = null;
+        if (phone.getPhoneName().equals("CDMA")) {
+            conn = call.getLatestConnection();
+        } else {
+            conn = call.getEarliestConnection();
+        }
+        return conn;
+    }
+
+    static boolean isProximitySensorAvailable(Context ctx) {
+        if (sProximitySensorAvailable != 0) {
+            return sProximitySensorAvailable == 1;
+        }
+        SensorManager sm = (SensorManager) ctx.getSystemService(Context.SENSOR_SERVICE);
+        Sensor sensor = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        sProximitySensorAvailable = (sensor != null) ? 1 : -1;
+        return isProximitySensorAvailable(ctx);
+    }
 
     static boolean hangupRingingCall(Phone phone) {
         if (DBG) log("hangup ringing call");
@@ -494,11 +509,11 @@ static Connection getConnection(Phone phone, Call call) {
             CdmaPhoneCallState.PhoneCallState.IDLE) {
             // This is the first outgoing call. Set the Phone Call State to ACTIVE
             app.cdmaPhoneCallState.setCurrentCallState(
-                CdmaPhoneCallState.PhoneCallState.SINGLE_ACTIVE);
+                    CdmaPhoneCallState.PhoneCallState.SINGLE_ACTIVE);
         } else {
             // This is the second outgoing call. Set the Phone Call State to 3WAY
             app.cdmaPhoneCallState.setCurrentCallState(
-                CdmaPhoneCallState.PhoneCallState.THRWAY_ACTIVE);
+                    CdmaPhoneCallState.PhoneCallState.THRWAY_ACTIVE);
         }
     }
 
@@ -604,7 +619,7 @@ static Connection getConnection(Phone phone, Call call) {
      * @return either CALL_STATUS_DIALED or CALL_STATUS_FAILED
      */
     static int placeCallVia(Context context, Phone phone,
-                            String number, Uri contactRef, Uri gatewayUri) {
+            String number, Uri contactRef, Uri gatewayUri) {
         if (DBG) log("placeCallVia: '" + number + "' GW:'" + gatewayUri + "'");
 
         // TODO: 'tel' should be a contant defined in framework base
@@ -784,9 +799,9 @@ static Connection getConnection(Phone phone, Call call) {
      * @return the dialog handle
      */
     static Dialog displayMMIInitiate(Context context,
-                                          MmiCode mmiCode,
-                                          Message buttonCallbackMessage,
-                                          Dialog previousAlert) {
+            MmiCode mmiCode,
+            Message buttonCallbackMessage,
+            Dialog previousAlert) {
         if (DBG) log("displayMMIInitiate: " + mmiCode);
         if (previousAlert != null) {
             previousAlert.dismiss();
@@ -856,7 +871,7 @@ static Connection getConnection(Phone phone, Call call) {
             if (DBG) log("not a USSD code, displaying status toast.");
             CharSequence text = context.getText(R.string.mmiStarted);
             Toast.makeText(context, text, Toast.LENGTH_SHORT)
-                .show();
+            .show();
             return null;
         } else {
             if (DBG) log("running USSD code, displaying indeterminate progress.");
@@ -986,10 +1001,10 @@ static Connection getConnection(Phone phone, Call call) {
                 // using another activity to display the message.  This
                 // places the message at the forefront of the UI.
                 AlertDialog newDialog = new AlertDialog.Builder(context)
-                        .setMessage(text)
-                        .setPositiveButton(R.string.ok, null)
-                        .setCancelable(true)
-                        .create();
+                .setMessage(text)
+                .setPositiveButton(R.string.ok, null)
+                .setCancelable(true)
+                .create();
 
                 newDialog.getWindow().setType(
                         WindowManager.LayoutParams.TYPE_SYSTEM_DIALOG);
@@ -1035,10 +1050,10 @@ static Connection getConnection(Phone phone, Call call) {
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
                             switch (whichButton) {
-                                case DialogInterface.BUTTON1:
+                                case DialogInterface.BUTTON_POSITIVE:
                                     phone.sendUssdResponse(inputText.getText().toString());
                                     break;
-                                case DialogInterface.BUTTON2:
+                                case DialogInterface.BUTTON_NEGATIVE:
                                     if (mmiCode.isCancelable()) {
                                         mmiCode.cancel();
                                     }
@@ -1049,28 +1064,28 @@ static Connection getConnection(Phone phone, Call call) {
 
                 // build the dialog
                 final AlertDialog newDialog = new AlertDialog.Builder(context)
-                        .setMessage(text)
-                        .setView(dialogView)
-                        .setPositiveButton(R.string.send_button, mUSSDDialogListener)
-                        .setNegativeButton(R.string.cancel, mUSSDDialogListener)
-                        .setCancelable(false)
-                        .create();
+                .setMessage(text)
+                .setView(dialogView)
+                .setPositiveButton(R.string.send_button, mUSSDDialogListener)
+                .setNegativeButton(R.string.cancel, mUSSDDialogListener)
+                .setCancelable(false)
+                .create();
 
                 // attach the key listener to the dialog's input field and make
                 // sure focus is set.
                 final View.OnKeyListener mUSSDDialogInputListener =
                     new View.OnKeyListener() {
-                        public boolean onKey(View v, int keyCode, KeyEvent event) {
-                            switch (keyCode) {
-                                case KeyEvent.KEYCODE_CALL:
-                                case KeyEvent.KEYCODE_ENTER:
-                                    phone.sendUssdResponse(inputText.getText().toString());
-                                    newDialog.dismiss();
-                                    return true;
-                            }
-                            return false;
+                    public boolean onKey(View v, int keyCode, KeyEvent event) {
+                        switch (keyCode) {
+                            case KeyEvent.KEYCODE_CALL:
+                            case KeyEvent.KEYCODE_ENTER:
+                                phone.sendUssdResponse(inputText.getText().toString());
+                                newDialog.dismiss();
+                                return true;
                         }
-                    };
+                        return false;
+                    }
+                };
                 inputText.setOnKeyListener(mUSSDDialogInputListener);
                 inputText.requestFocus();
 
@@ -1158,7 +1173,7 @@ static Connection getConnection(Phone phone, Call call) {
      *         or <code>null</code> if the number cannot be found.
      */
     static String getNumberFromIntent(Context context, Phone phone, Intent intent)
-            throws VoiceMailNumberMissingException {
+    throws VoiceMailNumberMissingException {
         final String number = PhoneNumberUtils.getNumberFromIntent(intent, context);
 
         // Check for a voicemail-dailing request.  If the voicemail number is
@@ -1328,7 +1343,7 @@ static Connection getConnection(Phone phone, Call call) {
             // here regardless of whether the number is empty or not).
             cit.currentInfo.cnapName =  c.getCnapName();
             cit.currentInfo.name = cit.currentInfo.cnapName; // This can still get overwritten
-                                                             // by ContactInfo later
+            // by ContactInfo later
             cit.currentInfo.numberPresentation = c.getNumberPresentation();
             cit.currentInfo.namePresentation = c.getCnapNamePresentation();
 
@@ -1418,7 +1433,7 @@ static Connection getConnection(Phone phone, Call call) {
                     }
                     // Store CNAP information retrieved from the Connection
                     cit.currentInfo.cnapName = c.getCnapName();  // This can still get
-                                                                 // overwritten by ContactInfo
+                    // overwritten by ContactInfo
                     cit.currentInfo.name = cit.currentInfo.cnapName;
                     cit.currentInfo.numberPresentation = c.getNumberPresentation();
                     cit.currentInfo.namePresentation = c.getCnapNamePresentation();
@@ -1451,43 +1466,43 @@ static Connection getConnection(Phone phone, Call call) {
     private static final int QUERY_TOKEN = -1;
     static CallerInfoAsyncQuery.OnQueryCompleteListener sCallerInfoQueryListener =
         new CallerInfoAsyncQuery.OnQueryCompleteListener () {
-            public void onQueryComplete(int token, Object cookie, CallerInfo ci) {
-                if (DBG) log("query complete, updating connection.userdata");
-                Connection conn = (Connection) cookie;
+        public void onQueryComplete(int token, Object cookie, CallerInfo ci) {
+            if (DBG) log("query complete, updating connection.userdata");
+            Connection conn = (Connection) cookie;
 
-                // Added a check if CallerInfo is coming from ContactInfo or from Connection.
-                // If no ContactInfo, then we want to use CNAP information coming from network
-                if (DBG) log("- onQueryComplete: CallerInfo:" + ci);
-                if (ci.contactExists || ci.isEmergencyNumber() || ci.isVoiceMailNumber()) {
-                    // If the number presentation has not been set by
-                    // the ContactInfo, use the one from the
-                    // connection.
+            // Added a check if CallerInfo is coming from ContactInfo or from Connection.
+            // If no ContactInfo, then we want to use CNAP information coming from network
+            if (DBG) log("- onQueryComplete: CallerInfo:" + ci);
+            if (ci.contactExists || ci.isEmergencyNumber() || ci.isVoiceMailNumber()) {
+                // If the number presentation has not been set by
+                // the ContactInfo, use the one from the
+                // connection.
 
-                    // TODO: Need a new util method to merge the info
-                    // from the Connection in a CallerInfo object.
-                    // Here 'ci' is a new CallerInfo instance read
-                    // from the DB. It has lost all the connection
-                    // info preset before the query (see PhoneUtils
-                    // line 1334). We should have a method to merge
-                    // back into this new instance the info from the
-                    // connection object not set by the DB. If the
-                    // Connection already has a CallerInfo instance in
-                    // userData, then we could use this instance to
-                    // fill 'ci' in. The same routine could be used in
-                    // PhoneUtils.
-                    if (0 == ci.numberPresentation) {
-                        ci.numberPresentation = conn.getNumberPresentation();
-                    }
-                } else {
-                    CallerInfo newCi = getCallerInfo(null, conn);
-                    if (newCi != null) {
-                        newCi.phoneNumber = ci.phoneNumber; // To get formatted phone number
-                        ci = newCi;
-                    }
+                // TODO: Need a new util method to merge the info
+                // from the Connection in a CallerInfo object.
+                // Here 'ci' is a new CallerInfo instance read
+                // from the DB. It has lost all the connection
+                // info preset before the query (see PhoneUtils
+                // line 1334). We should have a method to merge
+                // back into this new instance the info from the
+                // connection object not set by the DB. If the
+                // Connection already has a CallerInfo instance in
+                // userData, then we could use this instance to
+                // fill 'ci' in. The same routine could be used in
+                // PhoneUtils.
+                if (0 == ci.numberPresentation) {
+                    ci.numberPresentation = conn.getNumberPresentation();
                 }
-                conn.setUserData(ci);
+            } else {
+                CallerInfo newCi = getCallerInfo(null, conn);
+                if (newCi != null) {
+                    newCi.phoneNumber = ci.phoneNumber; // To get formatted phone number
+                    ci = newCi;
+                }
             }
-        };
+            conn.setUserData(ci);
+        }
+    };
 
 
     /**
@@ -1553,7 +1568,7 @@ static Connection getConnection(Phone phone, Call call) {
             CdmaPhoneCallState.PhoneCallState state = app.cdmaPhoneCallState.getCurrentCallState();
             if ((state == CdmaPhoneCallState.PhoneCallState.CONF_CALL)
                     || ((state == CdmaPhoneCallState.PhoneCallState.THRWAY_ACTIVE)
-                    && !app.cdmaPhoneCallState.IsThreeWayCallOrigStateDialing())) {
+                            && !app.cdmaPhoneCallState.IsThreeWayCallOrigStateDialing())) {
                 return true;
             }
         } else if (phoneType == Phone.PHONE_TYPE_GSM) {
@@ -1853,7 +1868,7 @@ static Connection getConnection(Phone phone, Call call) {
 
         if (!ignore) {
             AudioManager audioManager =
-                    (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             // Enable stack dump only when actively debugging ("new Throwable()" is expensive!)
             if (DBG_SETAUDIOMODE_STACK) Log.d(LOG_TAG, "Stack:", new Throwable("stack dump"));
             audioManager.setMode(mode);
@@ -1917,7 +1932,7 @@ static Connection getConnection(Phone phone, Call call) {
                 } else {
                     if (DBG) log("handleHeadsetHook: ringing ==> answer!");
                     answerCall(phone);  // Automatically holds the current active call,
-                                        // if there is one
+                    // if there is one
                 }
             } else {
                 throw new IllegalStateException("Unexpected phone type: " + phoneType);
@@ -1953,6 +1968,44 @@ static Connection getConnection(Phone phone, Call call) {
         return true;
     }
 
+    // KrazyKrivda's hangup from headset mod (needs PhoneApp changes as well)
+    // just simple handleHeadsetHook overloaded function
+    static boolean handleHeadsetHook(Phone phone, int x) {
+        if (DBG) log("handleHeadsetHook()...");
+        if (phone.getState() == Phone.State.IDLE) {
+            return false;
+        }
+
+        final boolean hasRingingCall = !phone.getRingingCall().isIdle();
+        final boolean hasActiveCall = !phone.getForegroundCall().isIdle();
+        final boolean hasHoldingCall = !phone.getBackgroundCall().isIdle();
+
+        if (hasRingingCall) {
+            int phoneType = phone.getPhoneType();
+            if (phoneType == Phone.PHONE_TYPE_CDMA) {
+                answerCall(phone);
+            } else if (phoneType == Phone.PHONE_TYPE_GSM) {
+                if (hasActiveCall && hasHoldingCall) {
+                    if (DBG) log("handleHeadsetHook: ringing (both lines in use) ==> answer!");
+                    answerAndEndActive(phone);
+                } else {
+                    if (DBG) log("handleHeadsetHook: ringing ==> answer!");
+                    answerCall(phone);  // Automatically holds the current active call,
+                    // if there is one
+                }
+            } else {
+                throw new IllegalStateException("Unexpected phone type: " + phoneType);
+            }
+        } else {
+            Connection c = phone.getForegroundCall().getLatestConnection();
+            if (c != null && !PhoneNumberUtils.isEmergencyNumber(c.getAddress())) {
+                hangup(phone);
+            }
+        }
+        return true;
+    }
+    // End Hangup Headset option mod
+
     /**
      * Look for ANY connections on the phone that qualify as being
      * disconnected.
@@ -1962,8 +2015,8 @@ static Connection getConnection(Phone phone, Call call) {
      */
     /* package */ static boolean hasDisconnectedConnections(Phone phone) {
         return hasDisconnectedConnections(phone.getForegroundCall()) ||
-                hasDisconnectedConnections(phone.getBackgroundCall()) ||
-                hasDisconnectedConnections(phone.getRingingCall());
+        hasDisconnectedConnections(phone.getBackgroundCall()) ||
+        hasDisconnectedConnections(phone.getRingingCall());
     }
 
     /**
@@ -2007,8 +2060,8 @@ static Connection getConnection(Phone phone, Call call) {
             // is in the HOLDING state, since you *can't* actually swap calls
             // when the foreground call is DIALING or ALERTING.)
             return phone.getRingingCall().isIdle()
-                    && (phone.getForegroundCall().getState() == Call.State.ACTIVE)
-                    && (phone.getBackgroundCall().getState() == Call.State.HOLDING);
+            && (phone.getForegroundCall().getState() == Call.State.ACTIVE)
+            && (phone.getBackgroundCall().getState() == Call.State.HOLDING);
         } else {
             throw new IllegalStateException("Unexpected phone type: " + phoneType);
         }
@@ -2044,9 +2097,9 @@ static Connection getConnection(Phone phone, Call call) {
         int phoneType = phone.getPhoneType();
         final Call.State fgCallState = phone.getForegroundCall().getState();
         if (phoneType == Phone.PHONE_TYPE_CDMA) {
-           // CDMA: "Add call" menu item is only enabled when the call is in
-           // - ForegroundCall is in ACTIVE state
-           // - After 30 seconds of user Ignoring/Missing a Call Waiting call.
+            // CDMA: "Add call" menu item is only enabled when the call is in
+            // - ForegroundCall is in ACTIVE state
+            // - After 30 seconds of user Ignoring/Missing a Call Waiting call.
             PhoneApp app = PhoneApp.getInstance();
             return ((fgCallState == Call.State.ACTIVE)
                     && (app.cdmaPhoneCallState.getAddCallMenuStateAfterCallWaiting()));
@@ -2062,10 +2115,10 @@ static Connection getConnection(Phone phone, Call call) {
             final boolean allLinesTaken = hasActiveCall && hasHoldingCall;
 
             return !hasRingingCall
-                    && !allLinesTaken
-                    && ((fgCallState == Call.State.ACTIVE)
-                        || (fgCallState == Call.State.IDLE)
-                        || (fgCallState == Call.State.DISCONNECTED));
+            && !allLinesTaken
+            && ((fgCallState == Call.State.ACTIVE)
+                    || (fgCallState == Call.State.IDLE)
+                    || (fgCallState == Call.State.DISCONNECTED));
         } else {
             throw new IllegalStateException("Unexpected phone type: " + phoneType);
         }
@@ -2181,9 +2234,9 @@ static Connection getConnection(Phone phone, Call call) {
         }
 
         dst.putExtra(InCallScreen.EXTRA_GATEWAY_PROVIDER_PACKAGE,
-                     src.getStringExtra(InCallScreen.EXTRA_GATEWAY_PROVIDER_PACKAGE));
+                src.getStringExtra(InCallScreen.EXTRA_GATEWAY_PROVIDER_PACKAGE));
         dst.putExtra(InCallScreen.EXTRA_GATEWAY_URI,
-                     src.getStringExtra(InCallScreen.EXTRA_GATEWAY_URI));
+                src.getStringExtra(InCallScreen.EXTRA_GATEWAY_URI));
     }
 
     /**
@@ -2282,7 +2335,7 @@ static Connection getConnection(Phone phone, Call call) {
         PhoneApp app = PhoneApp.getInstance();
         Log.d(LOG_TAG, "dumpCallState():");
         Log.d(LOG_TAG, "- Phone: " + phone + ", name = " + phone.getPhoneName()
-              + ", state = " + phone.getState());
+                + ", state = " + phone.getState());
 
         StringBuilder b = new StringBuilder(128);
 
@@ -2332,7 +2385,7 @@ static Connection getConnection(Phone phone, Call call) {
         if (phone.getPhoneType() == Phone.PHONE_TYPE_CDMA) {
             if (app.cdmaPhoneCallState != null) {
                 Log.d(LOG_TAG, "  - CDMA call state: "
-                      + app.cdmaPhoneCallState.getCurrentCallState());
+                        + app.cdmaPhoneCallState.getCurrentCallState());
             } else {
                 Log.d(LOG_TAG, "  - CDMA device, but null cdmaPhoneCallState!");
             }
