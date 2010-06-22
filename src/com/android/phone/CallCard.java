@@ -1158,17 +1158,26 @@ mCity.setVisibility(View.GONE);
 
     private void updateOrganization(final long person_id) {
         android.database.Cursor c = CallCard.this.getContext().getContentResolver().query(ContactsContract.Data.CONTENT_URI,
-                new String[] { ContactsContract.CommonDataKinds.Organization.COMPANY },
-                ContactsContract.Data.CONTACT_ID + " = ? and " + ContactsContract.Data.MIMETYPE + " = '" +
-                ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE + "'", new String[] { person_id + "" },
+                new String[] { ContactsContract.CommonDataKinds.Organization.COMPANY, 
+                    ContactsContract.CommonDataKinds.Nickname.NAME },
+                ContactsContract.Data.CONTACT_ID + " = ? and (" + ContactsContract.Data.MIMETYPE + " = '" +
+                ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE + "' or " + 
+                ContactsContract.Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.Nickname.CONTENT_ITEM_TYPE + "' )", 
+                new String[] { person_id + "" },
                 null);
         if (c != null) {
             if (c.moveToNext()) {
                 try {
                     // we have found an organization.  set the organization name and exit loop
-                    mOrganization.setText(c.getString(0));
-                    mOrganization.setVisibility(View.VISIBLE);
-                    mOrganization.invalidate();
+                    String organ = c.getString(1);
+                    if (TextUtils.isEmpty(organ)) {
+                        organ = c.getString(0);
+                    }
+                    if (!TextUtils.isEmpty(organ)) {
+                        mOrganization.setText(organ);
+                        mOrganization.setVisibility(View.VISIBLE);
+                        mOrganization.invalidate();
+                    }
                 } catch (Exception e) {}
             } else {
                 mOrganization.setVisibility(View.GONE);
