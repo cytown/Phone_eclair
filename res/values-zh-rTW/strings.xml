@@ -585,8 +585,8 @@
 <string name="screen_awake_sum">通話時, 屏幕等待更長時間才關閉.</string>
 <string name="led_notify_call">未接電話LED通知</string>
 <string name="led_notify_call_sum">有未接電話時LED會閃爍.</string>
-<string name="led_show_organ">顯示公司名稱</string>
-<string name="led_show_organ_sum">打電話界面顯示公司名稱在姓名後面.</string>
+<string name="led_show_organ">顯示昵稱或公司名稱</string>
+<string name="led_show_organ_sum">打電話界面顯示昵稱或公司名稱在姓名後面.</string>
 <string name="vibrate_call_waiting">呼叫等待震動</string>
 <string name="vibrate_call_waiting_sum">當呼叫等待時震動通知.</string>
 <string name="return_home">強制返回到通話記錄</string>
